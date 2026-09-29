@@ -218,26 +218,33 @@
   $('cfg').onclick = async e => {
     const b = e.target.closest('button'); if (!b) return;
     const el = b.closest('.kc'), k = el.dataset.k;
+    const teksAsli = b.textContent;
     let r;
     if (b.dataset.c === 'reset') {
       if (!confirm(`Kembalikan jadwal ${k} ke jadwal awal?`)) return;
+      b.disabled = true; b.textContent = 'Menyimpan...';
       r = await aksi({ action:'setConfig', jadwal:{ [k]:null } });
-      if (r && r.ok) toast('↩️ Jadwal dikembalikan ke awal');
+      if (r && r.ok) toast('↩️ Jadwal ' + k + ' dikembalikan ke awal');
     } else {
       const [mj, mm] = el.querySelector('.mulai').value.split(':').map(Number);
       const [sj, sm] = el.querySelector('.selesai').value.split(':').map(Number);
       const mode = el.querySelector('.mode').value;
       if ([mj, mm, sj, sm].some(isNaN)) { toast('❌ Isi jam mulai dan selesai.', true); return; }
       if (mode !== 'auto' && !confirm(`${mode === 'buka' ? 'Buka paksa' : 'Tutup paksa'} ${k}? Jadwal diabaikan sampai dikembalikan ke "Ikuti jadwal".`)) return;
+      b.disabled = true; b.textContent = 'Menyimpan...';
       r = await aksi({ action:'setConfig', paksa:{ [k]:mode }, jadwal:{ [k]:{ hari:+el.querySelector('.hari').value, mulaiJam:mj, mulaiMenit:mm, selesaiJam:sj, selesaiMenit:sm } } });
-      if (r && r.ok) toast('✅ Jadwal dan mode kelas disimpan');
+      if (r && r.ok) toast('✅ Jadwal & mode ' + k + ' tersimpan');
     }
+    b.disabled = false; b.textContent = teksAsli;
     cfgRendered = false; refresh();
   };
 
   $('btnMax').onclick = async () => {
+    const b = $('btnMax');
+    b.disabled = true; b.textContent = 'Menyimpan...';
     const r = await aksi({ action:'setConfig', max:$('max').value });
-    if (r && r.ok) { toast('✅ Batas pelanggaran disimpan'); refresh(); }
+    b.disabled = false; b.textContent = 'Simpan batas';
+    if (r && r.ok) { toast('✅ Batas pelanggaran disimpan: ' + $('max').value); refresh(); }
   };
   $('btnUnlockAll').onclick = async () => {
     const k = $('fKelas').value;
