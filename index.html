@@ -219,9 +219,12 @@
     if (r.terkunci) tampilLock(r.pelanggaran);
   }
 
+  // saat kembali ke tab dalam kondisi terkunci/ditutup, langsung cek ke server (timer tab latar bisa tertunda)
+  const cekUlang = () => { if (layar === 'lock' || layar === 'ditutup') { clearTimeout(pollT); poll(); } };
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) catatPelanggaran();
+    if (document.hidden) catatPelanggaran(); else cekUlang();
   });
+  window.addEventListener('focus', cekUlang);
   // blur juga menyala saat mahasiswa mengklik isi Form (iframe). Yang dihitung hanya kalau fokus benar-benar keluar dari halaman.
   window.addEventListener('blur', function () {
     setTimeout(function () { if (!document.hasFocus()) catatPelanggaran(); }, 150);
