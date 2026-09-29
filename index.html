@@ -127,7 +127,7 @@
     if (!cek.ok) { msg.textContent = cek.error || 'Gagal memeriksa status.'; return; }
 
     $('gate').classList.add('hidden');
-    terapkan(cek);
+    try { terapkan(cek); } catch (e) { tampilStatus('⚠️ Terjadi Kesalahan', 'Muat ulang halaman atau hubungi pengawas. (' + e.message + ')'); }
   }
 
   function infoWaktu(w) {
@@ -148,7 +148,7 @@
     if (st === 'sedang_berlangsung') return layar === 'quiz' ? setBanner(cek.pelanggaran) : bukaQuiz(cek.pelanggaran);
     if (st === 'ruang_tunggu') return layar === 'wait' ? 0 : masukRuangTunggu(w);
     clearInterval(tungguT);
-    const [j, t] = infoWaktu(w);
+    const [j, t] = infoWaktu(w) || ['⚠️ Status Tidak Dikenal', 'Hubungi pengawas. (' + st + ')'];
     layar = st === 'ditutup' ? 'ditutup' : (st === 'sudah_selesai' ? 'selesai' : 'info');
     tampilStatus(j, t);
     if (layar === 'ditutup') jadwalPoll(10000);
