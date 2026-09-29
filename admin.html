@@ -77,14 +77,14 @@
       </div>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>NIM</th><th>Nama</th><th>Kelas</th><th>Email</th><th>Pelanggaran</th><th>Status</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>NIM</th><th>Nama</th><th>Kelas</th><th>Email</th><th>Saat ini</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
     <div class="empty" id="empty" hidden>Belum ada peserta yang masuk.</div>
   </section>
 
   <section>
-    <details id="logBox"><summary>Riwayat tindakan pengawas</summary><pre id="logOut" style="margin-top:10px">Memuat...</pre></details>
+    <details id="logBox"><summary>Riwayat pelanggaran dan tindakan pengawas</summary><pre id="logOut" style="margin-top:10px">Memuat...</pre></details>
   </section>
 </main>
 
@@ -154,13 +154,13 @@
     const all = data.students.filter(s => !fk || s.kelas === fk);
     $('sTotal').textContent = all.length;
     $('sLock').textContent = all.filter(s => s.terkunci).length;
-    $('sViol').textContent = all.filter(s => s.pelanggaran > 0).length;
+    $('sViol').textContent = all.filter(s => s.total > 0).length;
     const rows = all.filter(s => !q || (s.nama + s.nim + s.email).toLowerCase().includes(q))
       .sort((a, b) => (b.terkunci - a.terkunci) || (b.update || 0) - (a.update || 0));
     $('empty').hidden = rows.length > 0;
     $('tbody').innerHTML = rows.map(s => `<tr class="${s.terkunci ? 'lock' : ''}">
       <td>${esc(s.nim)}</td><td>${esc(s.nama)}</td><td>${esc(s.kelas)}</td><td>${esc(s.email)}</td>
-      <td>${s.pelanggaran}</td><td><span class="tag ${s.terkunci ? 'l' : 'a'}">${s.terkunci ? 'Terkunci' : 'Aktif'}</span></td>
+      <td>${s.pelanggaran}</td><td>${s.total}</td><td><span class="tag ${s.terkunci ? 'l' : 'a'}">${s.terkunci ? 'Terkunci' : 'Aktif'}</span></td>
       <td class="act" data-n="${esc(s.nim)}">
         ${s.terkunci ? '<button class="pri" data-a="unlock">Buka kunci</button>' : '<button class="bad" data-a="lock">Kunci</button>'}
         <button data-a="minus" title="Kurangi 1 pelanggaran">−1</button><button data-a="plus" title="Tambah 1 pelanggaran">+1</button>
@@ -212,7 +212,7 @@
   $('logBox').ontoggle = async () => {
     if (!$('logBox').open) return;
     const r = await api({ action:'getLog' });
-    $('logOut').textContent = r.ok ? (r.log.map(l => `${new Date(l.t).toLocaleString('id-ID')}  ${l.aksi}  ${l.nim}  ${l.detail}`).join('\n') || 'Belum ada tindakan.') : r.error;
+    $('logOut').textContent = r.ok ? (r.log.map(l => `${new Date(l.t).toLocaleString('id-ID')}  ${l.aksi}  ${l.nim}  ${l.detail}`).join('\n') || 'Belum ada catatan.') : r.error;
   };
   $('fKelas').onchange = $('fCari').oninput = () => data && renderTable();
   $('auto').onchange = start;
