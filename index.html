@@ -273,6 +273,14 @@
   window.addEventListener('blur', function () {
     setTimeout(function () { if (!document.hasFocus()) catatPelanggaran(); }, 150);
   });
+  // Cadangan: event blur bisa tidak menyala kalau fokus terakhir ada di dalam iframe Form, lalu mahasiswa pindah ke jendela lain.
+  // Fokus dicek tiap 0,5 detik; yang dihitung hanya saat berubah dari ada -> hilang (debounce tetap berlaku).
+  let fokusAda = document.hasFocus();
+  setInterval(function () {
+    const ada = document.hasFocus();
+    if (fokusAda && !ada) catatPelanggaran();
+    fokusAda = ada;
+  }, 500);
   document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
 
