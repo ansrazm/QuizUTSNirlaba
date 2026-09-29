@@ -15,12 +15,14 @@
   #gate button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
   #gate button:disabled { opacity: .6; cursor: default; }
   #gate .msg { color: #c62828; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  #gate .note { font-size: 13px; color: #555; margin-bottom: 12px; line-height: 1.4; }
   #warning-banner { background: #ffebee; color: #c62828; padding: 10px 16px; font-size: 14px; text-align: center; display: none; border-bottom: 2px solid #c62828; }
   #warning-banner.show { display: block; }
   #status-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.92); color: white; display: none; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 24px; z-index: 999; }
   #status-screen.show { display: flex; }
   #status-screen h1 { font-size: 22px; margin-bottom: 12px; }
   #status-screen p { font-size: 15px; opacity: 0.85; max-width: 400px; }
+  #btnReload { display: none; margin-top: 16px; padding: 12px 20px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-size: 15px; cursor: pointer; }
   iframe { flex: 1; width: 100%; border: none; display: none; }
   #quizWrap { flex: 1; display: none; flex-direction: column; }
   #quizWrap.show { display: flex; }
@@ -37,6 +39,7 @@
       <option value="">-- Pilih Kelas --</option>
       <option value="Nirlaba jam 13.30">Nirlaba jam 13.30</option>
     </select>
+    <p class="note">Sebelum masuk, pastikan browser ini sudah login akun Google <b>@students.unri.ac.id</b>. <a href="https://accounts.google.com/AccountChooser" target="_blank" rel="noopener">Cek / ganti akun</a></p>
     <button id="btnMasuk" onclick="mulaiUjian()">Masuk Ujian</button>
     <div class="msg" id="gateMsg"></div>
   </div>
@@ -49,11 +52,12 @@
 <div id="status-screen">
   <h1 id="statusTitle"></h1>
   <p id="statusText"></p>
+  <button id="btnReload" onclick="muatUlangForm()">Muat ulang Form</button>
 </div>
 
 <div id="quizWrap">
-  <!-- sandbox: tanpa allow-top-navigation, jadi isi Form tidak bisa memindahkan halaman wrapper -->
-  <iframe id="quizFrame" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+  <!-- sandbox: tanpa allow-top-navigation dan tanpa allow-popups, jadi Form tidak bisa memindahkan halaman wrapper atau membuka tab baru (mis. sign-in) -->
+  <iframe id="quizFrame" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
 </div>
 
 <script>
@@ -78,8 +82,9 @@
   const emailOk = e => new RegExp('^[^\\s@]+@([a-z0-9-]+\\.)*' + EMAIL_DOMAIN.replace(/\./g, '\\.') + '$', 'i').test(e);
 
   let nama = "", nim = "", kelas = "", email = "";
-  let layar = 'gate'; // gate | wait | quiz | lock | ditutup | selesai | info
+  let layar = 'gate'; // gate | wait | quiz | lock | ditutup | selesai | info | pindah | terkirim
   let pollT = null, tungguT = null, graceSampai = 0, terakhirLapor = 0, cekBusy = false;
+  let loadCount = 0, navBusy = false, perluMuat = false;
 
   const P = a => ({ action: a, nim, nama, kelas, email });
 
@@ -98,6 +103,7 @@
   function tampilStatus(judul, teks) {
     $('statusTitle').textContent = judul;
     $('statusText').textContent = teks;
+    if (layar !== 'pindah') $('btnReload').style.display = 'none';
     $('status-screen').classList.add('show');
     $('quizWrap').classList.remove('show'); // iframe tetap ada, jawaban tidak hilang
   }
@@ -143,6 +149,8 @@
 
   // satu pintu untuk semua status dari server
   function terapkan(cek) {
+    // sudah kirim / Form sedang dalam kondisi berpindah: jangan buka soal lagi kecuali diminta (tombol Muat ulang)
+    if (layar === 'pindah' || layar === 'terkirim') return cek.terkunci ? tampilLock(cek.pelanggaran) : 0;
     const w = cek.waktu, st = w.status;
     if (cek.terkunci) return tampilLock(cek.pelanggaran);
     if (st === 'sedang_berlangsung') return layar === 'quiz' ? setBanner(cek.pelanggaran) : bukaQuiz(cek.pelanggaran);
@@ -161,7 +169,11 @@
   function bukaQuiz(pelanggaran) {
     clearInterval(tungguT);
     const f = $('quizFrame');
-    if (!f.getAttribute('src')) f.src = buatUrlFormTerisi(); // hanya sekali; setelah unlock cukup ditampilkan lagi
+    // dimuat sekali; dimuat ulang hanya kalau Form sempat berpindah (perluMuat)
+    if (!f.getAttribute('src') || perluMuat) {
+      loadCount = 0; perluMuat = false;
+      f.src = buatUrlFormTerisi() + '&r=' + Date.now();
+    }
     f.style.display = 'block';
     sembunyikanStatus();
     $('quizWrap').classList.add('show');
@@ -211,12 +223,43 @@
 
   async function catatPelanggaran() {
     const now = Date.now();
-    if (layar !== 'quiz' || now < graceSampai || now - terakhirLapor < DEBOUNCE_MS) return;
+    if ((layar !== 'quiz' && layar !== 'pindah') || now < graceSampai || now - terakhirLapor < DEBOUNCE_MS) return;
     terakhirLapor = now;
     const r = await panggilBackend(P('reportViolation'));
     if (!r.ok) return;
     setBanner(r.pelanggaran);
     if (r.terkunci) tampilLock(r.pelanggaran);
+  }
+
+  // Deteksi iframe berpindah halaman (mis. klik "Ganti akun" / login -> halaman Google).
+  // load pertama = Form dimuat. load berikutnya = navigasi: bisa submit sukses atau pindah ke halaman lain.
+  $('quizFrame').addEventListener('load', async function () {
+    loadCount++;
+    if (loadCount <= 1 || layar !== 'quiz' || navBusy) return;
+    navBusy = true;
+    tampilStatus('⏳ Memeriksa...', 'Halaman Form berpindah. Mohon tunggu sebentar.');
+    let terkirim = false;
+    for (let i = 0; i < 3 && !terkirim; i++) { // trigger submit di server butuh beberapa detik
+      await new Promise(r => setTimeout(r, 3000));
+      const c = await panggilBackend(P('checkStatus'));
+      terkirim = !!(c.ok && c.sudahKirim);
+    }
+    if (terkirim) {
+      layar = 'terkirim';
+      tampilStatus('✅ Jawaban Terkirim', 'Terima kasih. Kamu boleh menutup halaman ini.');
+    } else {
+      panggilBackend(P('reportNavigation')); // tercatat di dashboard: aksi "form_pindah"
+      layar = 'pindah'; perluMuat = true;
+      tampilStatus('⚠️ Halaman Form Berpindah', 'Form keluar dari halaman ujian (mungkin karena klik Ganti akun / login). Kejadian ini tercatat. Tekan tombol di bawah untuk memuat ulang Form; jawaban yang belum tersimpan mungkin perlu diisi ulang.');
+      $('btnReload').style.display = 'inline-block';
+    }
+    navBusy = false;
+  });
+
+  function muatUlangForm() {
+    $('btnReload').style.display = 'none';
+    layar = 'info'; // supaya bukaQuiz() memuat ulang Form dan memberi masa tenggang
+    poll();
   }
 
   // saat kembali ke tab dalam kondisi terkunci/ditutup, langsung cek ke server (timer tab latar bisa tertunda)
