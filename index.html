@@ -8,10 +8,13 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; background: #f5f5f5; height: 100vh; display: flex; flex-direction: column; }
-  #gate { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  #gate { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; overflow-y: auto; }
   #gate.hidden { display: none; }
   #gate .box { max-width: 380px; width: 100%; }
   #gate h2 { margin-bottom: 16px; color: #222; }
+  #gate .info { text-align: left; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.5; }
+  #gate .info ul { margin: 6px 0 0 18px; }
+  #gate .info li { margin-bottom: 2px; }
   #gate input, #gate select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
   #gate button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
   #gate button:disabled { opacity: .6; cursor: default; }
@@ -34,6 +37,15 @@
 <div id="gate">
   <div class="box">
     <h2>🔒 Masuk Ujian</h2>
+    <div class="info">
+      <b>Informasi Ujian</b>
+      <ul>
+        <li>Waktu pengerjaan: <b>30 menit</b> (13.45 - 14.15)</li>
+        <li>Jumlah soal: <b>40 soal</b> pilihan ganda</li>
+        <li>Submit sebelum <b>14.15</b>, karena Form akan <b>tertutup otomatis</b></li>
+        <li>Jangan berpindah tab/jendela selama ujian; pelanggaran tercatat dan ujian bisa <b>terkunci otomatis</b></li>
+      </ul>
+    </div>
     <input type="text" id="inpNama" placeholder="Nama Lengkap" autocomplete="off">
     <input type="text" id="inpNim" placeholder="NIM" autocomplete="off">
     <select id="inpKelas">
