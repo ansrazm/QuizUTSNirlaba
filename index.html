@@ -39,7 +39,7 @@
       <option value="">-- Pilih Kelas --</option>
       <option value="Nirlaba jam 13.30">Nirlaba jam 13.30</option>
     </select>
-    <p class="note">Sebelum masuk, pastikan browser ini sudah login akun Google <b>@students.unri.ac.id</b>. <a href="https://accounts.google.com/AccountChooser" target="_blank" rel="noopener">Cek / ganti akun</a></p>
+    <p class="note">Pastikan browser ini sudah login akun Google <b>@students.unri.ac.id</b> <u>sebelum</u> menekan Masuk. Setelah ujian dimulai, login / ganti akun tidak bisa dilakukan. <a href="https://accounts.google.com/AccountChooser" target="_blank" rel="noopener">Cek / ganti akun</a></p>
     <button id="btnMasuk" onclick="mulaiUjian()">Masuk Ujian</button>
     <div class="msg" id="gateMsg"></div>
   </div>
@@ -73,6 +73,7 @@
   const EMAIL_DOMAIN = 'unri.ac.id';
   const GRACE_MS = 15000;      // 15 detik pertama setelah soal terbuka tidak dihitung pelanggaran
   const DEBOUNCE_MS = 3000;    // beberapa event dalam jeda ini dihitung 1 pelanggaran
+  const DETEKSI_PINDAH = false; // false: tombol "Berikutnya" di Form multi-section juga memicu load iframe. Aktifkan hanya kalau Form cuma 1 section.
 
   const KELAS_KE_JADWAL_TEXT = {
     'Nirlaba jam 13.30': 'Selasa, 13.45 - 14.15 (Kelas jam 13.30)'
@@ -235,7 +236,7 @@
   // load pertama = Form dimuat. load berikutnya = navigasi: bisa submit sukses atau pindah ke halaman lain.
   $('quizFrame').addEventListener('load', async function () {
     loadCount++;
-    if (loadCount <= 1 || layar !== 'quiz' || navBusy) return;
+    if (!DETEKSI_PINDAH || loadCount <= 1 || layar !== 'quiz' || navBusy) return;
     navBusy = true;
     tampilStatus('⏳ Memeriksa...', 'Halaman Form berpindah. Mohon tunggu sebentar.');
     let terkirim = false;
