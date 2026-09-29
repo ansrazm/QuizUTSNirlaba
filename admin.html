@@ -123,7 +123,11 @@
     data = r;
     $('conn').textContent = 'Jam server: ' + r.serverTime;
     if (!cfgRendered) { renderCfg(); renderFilter(); cfgRendered = true; }
-    document.querySelectorAll('.kc').forEach(el => { el.querySelector('.st').textContent = STATUS[r.waktuKelas[el.dataset.k].status] || ''; });
+    document.querySelectorAll('.kc').forEach(el => {
+      el.querySelector('.st').textContent = STATUS[r.waktuKelas[el.dataset.k].status] || '';
+      const md = el.querySelector('.mode'); // samakan pilihan mode dengan kondisi server (kecuali sedang dipilih)
+      if (md && document.activeElement !== md) md.value = r.config.paksa[el.dataset.k] || 'auto';
+    });
     renderTable();
   }
 
